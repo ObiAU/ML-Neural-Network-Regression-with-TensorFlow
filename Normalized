@@ -1,0 +1,52 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import tensorflow as tf
+
+
+insurance = pd.read_csv("https://raw.githubusercontent.com/stedy/Machine-Learning-with-R-datasets/master/insurance.csv")
+
+from sklearn.compose import make_column_transformer
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
+
+#Create column transformer to preprocess data
+c = make_column_transformer(
+    (MinMaxScaler(),["age", "bmi", "children"]), 
+    (OneHotEncoder(handle_unknown="ignore"), ["sex", "smoker", "region"])
+)
+
+#Create x and y like in the pre-normalized model
+x = insurance.drop("charges", axis=1)
+y = insurance["charges"]
+
+#train and test sets
+x_train, x_test, y_train, y_test = train_test_split(x,y, test_size=0.2, random_state=42) 
+
+c.fit(x_train)
+
+#Transform x_train and x_test
+x_train_normal = c.transform(x_train)
+x_test_normal = c.transform(x_test)
+
+tf.random.set_seed(42)
+
+#Build model exactly as in pre-normalized code
+insurance_model3 = tf.keras.Sequential([
+    tf.keras.layers.Dense(100),
+    tf.keras.layers.Dense(10),
+    tf.keras.layers.Dense(1) #output layer is 1
+])
+
+insurance_model3.compile(loss=tf.keras.losses.mae,
+                         optimizer=tf.keras.optimizers.Adam(),
+                         metrics=["mae"])
+
+l = insurance_model3.fit(x_train_normal, y_train, epochs=200, verbose=0)
+
+#test
+insurance_model3.evaluate(x_test_normal, y_test)
+#plot
+pd.DataFrame(l.history).plot()
+plt.ylabel("loss")
+plt.xlabel("epochs")
+
+#Upon comparison, we gain an approx 15% decrease in error post normalization with all other conditions the same
