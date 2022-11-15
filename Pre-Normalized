@@ -1,0 +1,34 @@
+import numpy as np
+import tensorflow as tf
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+
+insurance = pd.read_csv("https://raw.githubusercontent.com/stedy/Machine-Learning-with-R-datasets/master/insurance.csv")
+insurance_one_hot = pd.get_dummies(insurance)
+insurance_one_hot.head()
+
+#creating x and y values
+x = insurance_one_hot.drop("charges", axis=1)
+y = insurance_one_hot["charges"]
+x_train, x_test, y_train, y_test = train_test_split(x,y,test_size=0.2,random_state=42)
+
+tf.random.set_seed(42)
+
+#3 layered model is generated after some hyperparameter tuning
+
+insurance_model2 = tf.keras.Sequential([
+    tf.keras.layers.Dense(100), #100 units
+    tf.keras.layers.Dense(10), #10 units
+    tf.keras.layers.Dense(1), #1 unit (important for output layer)
+])
+
+insurance_model2.compile(loss=tf.keras.losses.mae,
+                         optimizer=tf.keras.optimizers.Adam(),
+                         metrics=["mae"])
+
+h = insurance_model2.fit(x_train, y_train, epochs=200, verbose = 0)
+#plot of the models mae over epochs
+pd.DataFrame(h.history).plot()
+plt.ylabel("loss")
+plt.xlabel("epochs")
